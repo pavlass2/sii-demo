@@ -134,7 +134,13 @@ public class TransactionServiceImpl implements TransactionService
         transaction.setTimestamp(request.timestamp());
         transaction.setType(request.type());
         transaction.setActor(request.actor());
-        transaction.setTransactionData(new HashSet<>());
+
+        if (transaction.getTransactionData() == null) {
+            transaction.setTransactionData(new HashSet<>());
+        } else {
+            transaction.getTransactionData()
+                    .clear();
+        }
 
         request.transactionData()
                 .forEach((key, value) -> addTransactionDataToTransaction(key, value, transaction));

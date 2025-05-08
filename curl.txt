@@ -1,0 +1,45 @@
+CREATE
+curl -i -X POST http://localhost:8080/api/transaction \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": 123,
+    "timestamp": "2025-05-07T10:15:30+02:00",
+    "type": "PAYMENT",
+    "actor": "alice",
+    "transactionData": {
+      "foo": "bar",
+      "amount": "42.00"
+    }
+  }'
+
+READ
+curl -i -X GET http://localhost:8080/api/transaction/123 \
+  -H "Accept: application/json"
+
+
+UPDATE
+curl -i -X PUT http://localhost:8080/api/transaction/123 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": 123,
+    "timestamp": "2025-06-01T12:00:00+02:00",
+    "type": "REFUND",
+    "actor": "alice",
+    "transactionData": {
+      "reason": "product_return",
+      "amount": "42.00"
+    }
+  }'
+
+SEARCH
+curl -i -X GET "http://localhost:8080/api/transaction?\
+id=123&\
+timestampFrom=2025-01-01T00:00:00Z&\
+timestampUntil=2025-12-31T23:59:59Z&\
+actor=alice" \
+  -H "Accept: application/json"
+
+
+DELETE
+curl -i -X DELETE http://localhost:8080/api/transaction/123
+

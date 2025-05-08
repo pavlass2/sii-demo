@@ -12,11 +12,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.OffsetDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -113,7 +115,7 @@ class TransactionControllerIntegrationTest {
         existing.setTimestamp(OffsetDateTime.now());
         existing.setType("OLD");
         existing.setActor("bob");
-        existing.setTransactionData(Set.of());
+        existing.setTransactionData(new HashSet<>());
         when(transactionRepository.getTransactionsByForeignId(123))
                 .thenReturn(List.of(existing));
 
@@ -193,4 +195,51 @@ class TransactionControllerIntegrationTest {
                 .andExpect(jsonPath("$.transactions[0].transactionData.foo").value("bar"));
     }
 
+
+    @Test
+    @DisplayName("GET /api/transaction/{id} with unknown id → 404 Not Found")
+    void readTransactionNotFound() throws Exception {
+        when(transactionRepository.getTransactionsByForeignId(anyInt()))
+                .thenReturn(List.of()); // service will throw NotFoundException
+
+        mockMvc.perform(get(BASE + "/{id}", 999)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(HttpStatus.NOT_FOUND.toString()))
+                .andExpect(jsonPath("$.message").value("Requested transaction was not found."));
+    }
+
+    @Test
+    @DisplayName("PUT /api/transaction/{id} with unknown id → 404 Not Found")
+    void updateTransactionNotFound() throws Exception {
+        when(transactionRepository.getTransactionsByForeignId(anyInt()))
+                .thenReturn(List.of());
+
+        TransactionRequest req = new TransactionRequest(
+                999,
+                OffsetDateTime.parse("2025-06-01T12:00:00+02:00"),
+                "REFUND",
+                "bob",
+                Map.of("amount","100")
+        );
+
+        mockMvc.perform(put(BASE + "/{id}", 999)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(HttpStatus.NOT_FOUND.toString()))
+                .andExpect(jsonPath("$.message").value("Requested transaction was not found."));
+    }
+
+    @Test
+    @DisplayName("DELETE /api/transaction/{id} with unknown id → 404 Not Found")
+    void deleteTransactionNotFound() throws Exception {
+        when(transactionRepository.getTransactionsByForeignId(anyInt()))
+                .thenReturn(List.of());
+
+        mockMvc.perform(delete(BASE + "/{id}", 999))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(HttpStatus.NOT_FOUND.toString()))
+                .andExpect(jsonPath("$.message").value("Requested transaction was not found."));
+    }
 }
